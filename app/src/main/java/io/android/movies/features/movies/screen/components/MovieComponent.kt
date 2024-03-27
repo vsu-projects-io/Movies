@@ -78,8 +78,9 @@ internal fun MovieComponent_Preview() {
     Surface {
         MovieComponent(
             movie = MovieUi(
+                id = 0,
                 name = "Movie name",
-                rating = 7.5f,
+                rating = 7.5,
                 year = 2021,
                 posterUrl = "https://kinopoiskapiunofficial.tech/images/posters/kp_small/301.jpg"
             )

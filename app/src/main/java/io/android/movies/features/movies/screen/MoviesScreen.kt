@@ -32,7 +32,6 @@ import io.android.movies.R
 import io.android.movies.features.movies.screen.components.MovieComponent
 import io.android.movies.features.movies.screen.components.RefreshComponent
 import io.android.movies.features.movies.screen.models.MovieUi
-import io.android.movies.navigation.Screens
 import kotlinx.coroutines.flow.Flow
 
 @Composable
@@ -40,7 +39,7 @@ internal fun MoviesScreen(
     navController: NavController,
     viewModel: MoviesViewModel = hiltViewModel(),
 ) {
-    val state by viewModel.moviesState.collectAsState()
+    val moviesPagingFlow = viewModel.moviesFlow
 
     Scaffold { contentPadding ->
         Column(
@@ -49,15 +48,9 @@ internal fun MoviesScreen(
                 .padding(contentPadding)
         ) {
             // TODO: Добавить строку поиска
-            when(state) {
-                is MoviesState.MainLoading -> MoviesLoadingState()
-                is MoviesState.MainError -> MoviesErrorState {
-                    viewModel.refresh()
-                }
-                is MoviesState.ShowMovies -> MoviesContentState(
-                    moviesFlow = viewModel.moviesFlow
-                )
-            }
+            MoviesContentState(
+                moviesFlow = viewModel.moviesFlow
+            )
         }
     }
 }
@@ -110,39 +103,9 @@ internal fun MoviesContentState(
     moviesFlow: Flow<PagingData<MovieUi>>
 ) {
     val movies = moviesFlow.collectAsLazyPagingItems()
+    val loadState = movies.loadState.mediator
     
-    LazyVerticalGrid(columns = GridCells.Fixed(2)) {
-        if (movies.loadState.refresh is LoadState.Loading) {
-            item {
-                RefreshComponent(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp)
-                )
-            }
-        }
-
-        items(
-            count = movies.itemCount
-        ) { index ->
-            movies[index]?.let { movie ->
-                MovieComponent(movie = movie)
-            }
-        }
-
-        if (movies.loadState.append is LoadState.Loading) {
-            item {
-                CircularProgressIndicator(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .wrapContentWidth(Alignment.CenterHorizontally)
-                )
-            }
-        }
-    }
-
-    // TODO: обучный список
-    // LazyColumn {
+    // LazyVerticalGrid(columns = GridCells.Fixed(2)) {
     //     if (movies.loadState.refresh is LoadState.Loading) {
     //         item {
     //             RefreshComponent(
@@ -171,4 +134,35 @@ internal fun MoviesContentState(
     //         }
     //     }
     // }
+
+    // TODO: обучный список
+    LazyColumn {
+        if (loadState?.refresh is LoadState.Loading) {
+            item {
+                RefreshComponent(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                )
+            }
+        }
+
+        items(
+            count = movies.itemCount
+        ) { index ->
+            movies[index]?.let { movie ->
+                MovieComponent(movie = movie)
+            }
+        }
+
+        if (loadState?.append is LoadState.Loading) {
+            item {
+                CircularProgressIndicator(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .wrapContentWidth(Alignment.CenterHorizontally)
+                )
+            }
+        }
+    }
 }
